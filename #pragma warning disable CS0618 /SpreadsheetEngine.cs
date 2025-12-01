@@ -77,7 +77,7 @@ namespace LABA1
 
         public ExpressionParser(string expression, Dictionary<string, Cell> context)
         {
-            _expression = expression.Replace(" ", "").ToLower();
+            _expression = expression;
             _context = context;
             _pos = 0;
         }
@@ -85,11 +85,19 @@ namespace LABA1
         public double Parse()
         {
             var result = ParseOr();
+            SkipWhitespace();
             if (_pos < _expression.Length) throw new Exception("Error");
             return result;
         }
 
-        // --- Operations for Variant 54 ---
+        private void SkipWhitespace()
+        {
+            while (_pos < _expression.Length && char.IsWhiteSpace(_expression[_pos]))
+            {
+                _pos++;
+            }
+        }
+
 
         private double ParseOr()
         {
@@ -155,8 +163,14 @@ namespace LABA1
 
         private double ParseFactor()
         {
+            SkipWhitespace(); 
+
+            if (_pos >= _expression.Length) throw new Exception("Unexpected end");
+
             if (char.IsDigit(Peek()) || Peek() == '.') return ParseNumber();
+
             if (Match("(")) { double res = ParseOr(); Match(")"); return res; }
+
             if (Match("max")) { Match("("); double v1 = ParseOr(); Match(","); double v2 = ParseOr(); Match(")"); return Math.Max(v1, v2); }
             if (Match("min")) { Match("("); double v1 = ParseOr(); Match(","); double v2 = ParseOr(); Match(")"); return Math.Min(v1, v2); }
 
@@ -169,6 +183,7 @@ namespace LABA1
 
         private double ParseNumber()
         {
+            SkipWhitespace();
             string s = "";
             while (_pos < _expression.Length && (char.IsDigit(_expression[_pos]) || _expression[_pos] == '.'))
             {
@@ -180,6 +195,7 @@ namespace LABA1
 
         private string ParseIdentifier()
         {
+            SkipWhitespace();
             string s = "";
             while (_pos < _expression.Length && char.IsLetterOrDigit(_expression[_pos]))
             {
@@ -190,13 +206,24 @@ namespace LABA1
 
         private bool Match(string t)
         {
-            if (_expression.Length - _pos >= t.Length && _expression.Substring(_pos, t.Length) == t)
+            SkipWhitespace();
+
+            if (_expression.Length - _pos >= t.Length)
             {
-                _pos += t.Length; return true;
+                string sub = _expression.Substring(_pos, t.Length);
+                if (sub.Equals(t, StringComparison.OrdinalIgnoreCase))
+                {
+                    _pos += t.Length;
+                    return true;
+                }
             }
             return false;
         }
 
-        private char Peek() => _pos < _expression.Length ? _expression[_pos] : '\0';
+        private char Peek()
+        {
+            SkipWhitespace();
+            return _pos < _expression.Length ? _expression[_pos] : '\0';
+        }
     }
 }
